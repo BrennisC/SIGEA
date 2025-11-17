@@ -75,7 +75,7 @@ public class ActividadMappingConfig {
                 throw new IllegalArgumentException("El ID del estado de actividad debe ser un número positivo");
             }
 
-            EstadoActividadDomainEntity estado = estadoActividadRepository.findById(estadoId).orElse(null);
+            EstadoActividadDomainEntity estado = ActividadMappingConfig.this.estadoActividadRepository.findById(estadoId).orElse(null);
             if (estado == null) {
                 throw new IllegalArgumentException(
                     "No se encontró un estado de actividad con ID: " + estadoId
@@ -93,7 +93,7 @@ public class ActividadMappingConfig {
                 throw new IllegalArgumentException("El ID del tipo de actividad debe ser un número positivo");
             }
 
-            TipoActividadDomainEntity tipoActividad = tipoActividadRepository.findById(tipoActividadId).orElse(null);
+            TipoActividadDomainEntity tipoActividad = ActividadMappingConfig.this.tipoActividadRepository.findById(tipoActividadId).orElse(null);
             if (tipoActividad == null) {
                 throw new IllegalArgumentException(
                     "No se encontró un tipo de actividad con ID: " + tipoActividadId

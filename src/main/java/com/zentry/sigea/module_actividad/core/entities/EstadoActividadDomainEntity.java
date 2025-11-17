@@ -5,15 +5,15 @@ public class EstadoActividadDomainEntity {
     private String etiqueta;
 
     public static EstadoActividadDomainEntity create(String codigo, String etiqueta) {
-        EstadoActividadDomainEntity estadoActividadDomainEntity = new EstadoActividadDomainEntity();
-
-        estadoActividadDomainEntity.setCodigo(codigo);
-        estadoActividadDomainEntity.setEtiqueta(etiqueta);
-
         if (codigo == null || codigo.isBlank()) {
             throw new IllegalArgumentException("El código no puede ser nulo o vacío");
         }
-
+        if (etiqueta == null || etiqueta.isBlank()) {
+            throw new IllegalArgumentException("La etiqueta no puede ser nula o vacía");
+        }
+        EstadoActividadDomainEntity estadoActividadDomainEntity = new EstadoActividadDomainEntity();
+        estadoActividadDomainEntity.setCodigo(codigo);
+        estadoActividadDomainEntity.setEtiqueta(etiqueta);
         return estadoActividadDomainEntity;
     }
 
