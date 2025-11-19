@@ -16,12 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
 
 @RestController
@@ -55,7 +54,6 @@ public class InformeController {
         this.request = request;
     }
 
-    // CRUD de informes
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<InformeResponse> crearInforme(
         @ModelAttribute CrearInformeRequest request,
@@ -65,7 +63,12 @@ public class InformeController {
             InformeResponse response = crearInformeUseCase.execute(request);
 
             if (files != null && !files.isEmpty()) {
-                fileStorageService.guardarArchivos(response.getId(), files);
+                UUID informeId = java.util.UUID.fromString(response.getId());
+                String archivoUrl = fileStorageService.guardarArchivos(informeId, files);
+
+                actualizarInformeUseCase.actualizarArchivoUrl(response.getId(), archivoUrl);
+
+                response.setArchivoUrl(archivoUrl);
             }
 
             return ResponseEntity.ok(response);
@@ -93,14 +96,25 @@ public class InformeController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<InformeResponse> actualizarInforme(@PathVariable String id, @RequestBody ActualizarInformeRequest request) {
+    @PatchMapping(value = "/{idInforme}", consumes = {"multipart/form-data"})
+    public ResponseEntity<InformeResponse> actualizarInforme(
+        @PathVariable String idInforme,
+        @ModelAttribute ActualizarInformeRequest request,
+        @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
         try {
-            InformeResponse response = actualizarInformeUseCase.execute(id, request);
+            InformeResponse response = actualizarInformeUseCase.execute(idInforme, request);
+
+            if (files != null && !files.isEmpty()) {
+                UUID informeId = UUID.fromString(idInforme);
+                String archivoUrl = fileStorageService.guardarArchivos(informeId, files);
+                actualizarInformeUseCase.actualizarArchivoUrl(idInforme, archivoUrl);
+                response.setArchivoUrl(archivoUrl);
+            }
+
             return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

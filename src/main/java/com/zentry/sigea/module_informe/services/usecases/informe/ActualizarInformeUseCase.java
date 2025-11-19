@@ -52,4 +52,11 @@ public class ActualizarInformeUseCase {
         InformeDomainEntity updated = informeRepository.save(informe);
         return InformeResponseMapper.toResponse(updated);
     }
+
+    public void actualizarArchivoUrl(String informeId, String archivoUrl) {
+        InformeDomainEntity informe = informeRepository.findById(UUID.fromString(informeId))
+            .orElseThrow(() -> new IllegalArgumentException("Informe no encontrado"));
+        informe.setArchivoUrl(archivoUrl);
+        informeRepository.save(informe);
+    }
 }

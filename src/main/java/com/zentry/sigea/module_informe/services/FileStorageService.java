@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -48,19 +49,20 @@ public class FileStorageService {
         }
     }
 
-    public void guardarArchivos(String informeId, List<MultipartFile> archivos) {
-        try {
-            Path informeDir = rootLocation.resolve(informeId);
-            if (!Files.exists(informeDir)) {
-                Files.createDirectories(informeDir);
-            }
-            for (MultipartFile archivo : archivos) {
-                Path filePath = informeDir.resolve(archivo.getOriginalFilename());
-                archivo.transferTo(filePath.toFile());
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error al guardar archivos", e);
+    public String guardarArchivos(UUID informeId, List<MultipartFile> files) throws IOException {
+        String projectRoot = System.getProperty("user.dir");
+        String relativePath = "mediafiles/" + informeId;
+        Path directorioDestino = Paths.get(projectRoot, relativePath);
+
+        if (!Files.exists(directorioDestino)) {
+            Files.createDirectories(directorioDestino);
         }
+
+        MultipartFile file = files.get(0);
+        Path archivoDestino = directorioDestino.resolve(file.getOriginalFilename());
+        file.transferTo(archivoDestino.toFile());
+
+        return relativePath + "/" + file.getOriginalFilename();
     }
 
     public Resource loadAsResource(String filename) {
