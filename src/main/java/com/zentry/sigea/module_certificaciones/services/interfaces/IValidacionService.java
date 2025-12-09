@@ -13,6 +13,7 @@ public interface IValidacionService {
     
     /**
      * Valida un certificado con un tipo de validador específico
+     * IMPORTANTE: Solo valida si el certificado está en estado EMITIDO
      */
     ValidacionResponse validarCertificado(ValidarCertificadoRequest request);
     
@@ -30,4 +31,26 @@ public interface IValidacionService {
      * Obtiene validaciones por resultado
      */
     List<ValidacionResponse> obtenerValidacionesPorResultado(String resultado);
+    
+    /**
+     * Valida SOLO el estado del certificado sin procesar otras validaciones
+     * 
+     * Este método observa únicamente el estado actual del certificado.
+     * - Si el estado es EMITIDO: retorna true (válido)
+     * - Si el estado NO es EMITIDO: retorna false (no válido)
+     * 
+     * No realiza validaciones de asistencias ni otros procesos.
+     * 
+     * @param codigoValidacion Código del certificado
+     * @return true si el certificado está en estado EMITIDO, false en caso contrario
+     */
+    boolean validarEstadoCertificado(String codigoValidacion);
+    
+    /**
+     * Obtiene el estado actual del certificado
+     * 
+     * @param codigoValidacion Código del certificado
+     * @return El código del estado actual (ej: "EMITIDO", "REVOCADO", "SUSPENDIDO")
+     */
+    String obtenerEstadoCertificado(String codigoValidacion);
 }

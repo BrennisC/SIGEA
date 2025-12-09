@@ -8,13 +8,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.zentry.sigea.module_certificaciones.core.entities.CertificadoDomainEntity;
 import com.zentry.sigea.module_certificaciones.core.repositories.IEstadoCertificadoRepository;
 import com.zentry.sigea.module_certificaciones.infrastructure.repository.EstadoCertificadoRepository;
 import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.CrearCertificadoRequest;
+import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.ValidarCertificadoRequest;
 import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.CertificadoResponse;
-import com.zentry.sigea.module_certificaciones.services.interfaces.ICertificadoService;
+import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.ValidacionResponse;
+import com.zentry.sigea.module_certificaciones.services.interfaces.ICertificacionService;
 import com.zentry.sigea.module_certificaciones.services.usecases.certificado.CrearCertificadoUseCase;
 import com.zentry.sigea.module_certificaciones.services.usecases.certificado.CrearCertificadosMasivosUseCase;
 import com.zentry.sigea.module_certificaciones.services.usecases.certificado.GenerarPdfCertificadoUseCase;
@@ -23,13 +26,13 @@ import com.zentry.sigea.module_certificaciones.services.usecases.certificado.Rea
 import com.zentry.sigea.module_certificaciones.services.usecases.certificado.RevocarCertificadoUseCase;
 
 
+
 @Service
 @Transactional
-public class CertificadoServiceImpl implements ICertificadoService {
+public class CertificadoService implements ICertificacionService {
 
-    private final EstadoCertificadoRepository estadoCertificadoRepository_1;
     
-    private static final Logger log = LoggerFactory.getLogger(CertificadoServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(CertificadoService.class);
     
     // Use Cases
     private final CrearCertificadoUseCase crearCertificadoUseCase;
@@ -42,7 +45,7 @@ public class CertificadoServiceImpl implements ICertificadoService {
     // Repository para consultas adicionales
     private final IEstadoCertificadoRepository estadoCertificadoRepository;
     
-    public CertificadoServiceImpl(
+    public CertificadoService(
         CrearCertificadoUseCase crearCertificadoUseCase,
         CrearCertificadosMasivosUseCase crearCertificadosMasivosUseCase,
         ObtenerCertificadoPorCodigoUseCase obtenerCertificadoPorCodigoUseCase,
@@ -58,15 +61,14 @@ public class CertificadoServiceImpl implements ICertificadoService {
         this.reactivarCertificadoUseCase = reactivarCertificadoUseCase;
         this.generarPdfCertificadoUseCase = generarPdfCertificadoUseCase;
         this.estadoCertificadoRepository = estadoCertificadoRepository;
-        this.estadoCertificadoRepository_1 = estadoCertificadoRepository_1;
     }
     
     @Override
-    public CertificadoResponse crearCertificado(CrearCertificadoRequest request) {
+    public CertificadoResponse crearCertificado(CrearCertificadoRequest request, MultipartFile archivoPdf) {
         log.info("Creando certificado para asistencia: {}", request.getAsistenciaId());
         
         try {
-            CertificadoDomainEntity certificadoCreado = crearCertificadoUseCase.execute(request);
+            CertificadoDomainEntity certificadoCreado = crearCertificadoUseCase.execute(request, archivoPdf);
             
             log.info("Certificado creado exitosamente con ID: {} y código: {}", 
                     certificadoCreado.getIdCertificado(), certificadoCreado.getCodigoValidacion());
@@ -211,6 +213,26 @@ public class CertificadoServiceImpl implements ICertificadoService {
         // Esto requeriría servicios o adaptadores para comunicación entre módulos
         
         return response;
+    }
+
+    @Override
+    public ValidacionResponse validarCertificado(ValidarCertificadoRequest request) {
+        var log = LoggerFactory.getLogger(CertificadoService.class);
+        log.info("Validando certificado: {} con tipo: {}",
+                request.getCodigoValidacion(), request.getTipoValidador());
+        throw new UnsupportedOperationException("Unimplemented method 'validarCertificado'");
+    }
+
+    @Override
+    public List<ValidacionResponse> obtenerValidacionesCertificado(String codigoValidacion) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerValidacionesCertificado'");
+    }
+
+    @Override
+    public List<ValidacionResponse> obtenerValidacionesPorTipo(String tipoValidador) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerValidacionesPorTipo'");
     }
 
 }

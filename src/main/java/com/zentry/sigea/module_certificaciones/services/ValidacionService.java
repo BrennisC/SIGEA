@@ -14,25 +14,36 @@ import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.V
 import com.zentry.sigea.module_certificaciones.services.interfaces.IValidacionService;
 import com.zentry.sigea.module_certificaciones.services.usecases.validacion.ObtenerValidacionesCertificadoUseCase;
 import com.zentry.sigea.module_certificaciones.services.usecases.validacion.ValidarCertificadoUseCase;
+import com.zentry.sigea.module_certificaciones.services.usecases.validacion.ValidarEstadoCertificadoUseCase;
 
 @Service
 @Transactional
-public class ValidacionServiceImpl implements IValidacionService {
+public class ValidacionService implements IValidacionService {
     
-    private static final Logger log = LoggerFactory.getLogger(ValidacionServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ValidacionService.class);
     
     // Use Cases
     private final ValidarCertificadoUseCase validarCertificadoUseCase;
     private final ObtenerValidacionesCertificadoUseCase obtenerValidacionesCertificadoUseCase;
+    private final ValidarEstadoCertificadoUseCase validarEstadoCertificadoUseCase;
     
-    public ValidacionServiceImpl(
+    public ValidacionService(
         ValidarCertificadoUseCase validarCertificadoUseCase,
-        ObtenerValidacionesCertificadoUseCase obtenerValidacionesCertificadoUseCase
+        ObtenerValidacionesCertificadoUseCase obtenerValidacionesCertificadoUseCase,
+        ValidarEstadoCertificadoUseCase validarEstadoCertificadoUseCase
     ) {
         this.validarCertificadoUseCase = validarCertificadoUseCase;
         this.obtenerValidacionesCertificadoUseCase = obtenerValidacionesCertificadoUseCase;
+        this.validarEstadoCertificadoUseCase = validarEstadoCertificadoUseCase;
     }
     
+    /**
+     * Implementación de métodos de IValidacionService
+     * @param request Datos para validar el certificado
+     * @return Resultado de la validación
+     * 
+     * IMPORTANTE: Solo valida si el certificado está en estado EMITIDO
+     */
     @Override
     public ValidacionResponse validarCertificado(ValidarCertificadoRequest request) {
         log.info("Validando certificado: {} con tipo: {}", 
@@ -86,6 +97,48 @@ public class ValidacionServiceImpl implements IValidacionService {
         return List.of(); // Placeholder
     }
     
+    @Override
+    @Transactional(readOnly = true)
+    public boolean validarEstadoCertificado(String codigoValidacion) {
+        log.info("Validando ESTADO del certificado: {}", codigoValidacion);
+        
+        try {
+            boolean esValido = validarEstadoCertificadoUseCase.execute(codigoValidacion);
+            
+            log.info(
+                "Validación de estado completada. Certificado {}: {}",
+                codigoValidacion,
+                esValido ? "VÁLIDO (EMITIDO)" : "NO VÁLIDO (NO EMITIDO)"
+            );
+            
+            return esValido;
+            
+        } catch (Exception e) {
+            log.error("Error al validar estado del certificado {}: {}", 
+                     codigoValidacion, e.getMessage());
+            throw e;
+        }
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public String obtenerEstadoCertificado(String codigoValidacion) {
+        log.debug("Obteniendo estado del certificado: {}", codigoValidacion);
+        
+        try {
+            String estado = validarEstadoCertificadoUseCase.obtenerEstadoCertificado(codigoValidacion);
+            
+            log.debug("Estado del certificado {}: {}", codigoValidacion, estado);
+            
+            return estado;
+            
+        } catch (Exception e) {
+            log.error("Error al obtener estado del certificado {}: {}", 
+                     codigoValidacion, e.getMessage());
+            throw e;
+        }
+    }
+    
     // Métodos auxiliares de conversión
     
     /**
@@ -104,9 +157,7 @@ public class ValidacionServiceImpl implements IValidacionService {
         response.setFechaValidacion(validacion.getFechaValidacion());
         response.setResultado(validacion.getResultado());
         response.setDetalle(validacion.getDetalle());
-        
-        // TODO: Establecer el certificado completo si es necesario
-        // response.setCertificado(convertirAResponse(validacion.getCertificado()));
+
         
         return response;
     }

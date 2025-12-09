@@ -6,8 +6,8 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,14 +18,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.CrearCertificadoRequest;
 import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.ValidarCertificadoRequest;
 import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.CertificadoResponse;
 import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.ValidacionResponse;
-import com.zentry.sigea.module_certificaciones.services.interfaces.ICertificacionService;
+import com.zentry.sigea.module_certificaciones.services.CertificadoService;
 import com.zentry.sigea.module_informe.infrastructure.database.mappers.TipoInformeMapper;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,35 +46,40 @@ public class CertificacionController {
     
     private static final Logger log = LoggerFactory.getLogger(CertificacionController.class);
     
-    @Autowired
-    private ICertificacionService certificacionService;
-
-    CertificacionController(TipoInformeMapper tipoInformeMapper) {
-        this.tipoInformeMapper = tipoInformeMapper;
-    }
     
-    /**
-     * Crear un nuevo certificado
+    private final CertificadoService certificadoService;
+
+    CertificacionController(TipoInformeMapper tipoInformeMapper, CertificadoService certificadoService) {
+        this.tipoInformeMapper = tipoInformeMapper;
+        this.certificadoService = certificadoService;
+    }
+        
+        /**
+         * Crear un nuevo certificado
      */
-    @PostMapping("/crear")
+    @PostMapping(
+        value = "/crear",
+        consumes =  { MediaType.MULTIPART_FORM_DATA_VALUE }
+    )
     @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
     @Operation(
-        summary = "Crear certificado", 
-        description = "Crea un nuevo certificado para una inscripción" , 
-        security = @SecurityRequirement(
-            name = "administradorJWT"
-        ) , 
+        summary = "Crear certificado",
+        description = "Crea un nuevo certificado junto con un archivo adjunto",
+        security = @SecurityRequirement(name = "administradorJWT"),
         tags = {"Crear"}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Certificado creado exitosamente"),
     })
-    public ResponseEntity<CertificadoResponse> crearCertificado(@Valid @RequestBody CrearCertificadoRequest request) {
-        log.info("Solicitud de creación de certificado para inscripción: {}", request.getAsistenciaId());
-        
+    public ResponseEntity<CertificadoResponse> crearCertificado(
+            @RequestPart("datos") @Valid CrearCertificadoRequest request,
+            @RequestPart(value = "Archivo valido Pdf", required = false) MultipartFile archivo
+    ) {
+        log.info("Solicitud de creación con archivo: {}", request.getAsistenciaId());
+
         try {
-            CertificadoResponse certificado = certificacionService.crearCertificado(request);
-            log.info("Certificado creado exitosamente con ID: {}", certificado.getIdCertificado());
+            CertificadoResponse certificado = certificadoService.crearCertificado(request, archivo);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(certificado);
         } catch (RuntimeException e) {
             log.error("Error al crear certificado: {}", e.getMessage());
@@ -96,7 +104,7 @@ public class CertificacionController {
         log.info("Solicitud de creación de certificado para la inscripcion");
 
         try {
-            Map<String , Boolean> response = certificacionService.crearCertificadosMasivos(listAsistenciaIds);
+            Map<String , Boolean> response = certificadoService.crearCertificadosMasivos(listAsistenciaIds);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
@@ -127,7 +135,7 @@ public class CertificacionController {
         
         log.debug("Buscando certificado por código: {}", codigoValidacion);
         
-        Optional<CertificadoResponse> certificado = certificacionService.buscarCertificadoPorCodigo(codigoValidacion);
+        Optional<CertificadoResponse> certificado = certificadoService.buscarCertificadoPorCodigo(codigoValidacion);
         
         return certificado
             .map(cert -> ResponseEntity.ok(cert))
@@ -149,11 +157,11 @@ public class CertificacionController {
     )
     public ResponseEntity<CertificadoResponse> buscarCertificadoPorInscripcion(
             @Parameter(description = "ID de la inscripción") 
-            @PathVariable Long inscripcionId) {
+            @PathVariable String inscripcionId) {
         
         log.debug("Buscando certificado por inscripción: {}", inscripcionId);
         
-        Optional<CertificadoResponse> certificado = certificacionService.buscarCertificadoPorInscripcion(inscripcionId);
+        Optional<CertificadoResponse> certificado = certificadoService.buscarCertificadoPorInscripcion(inscripcionId);
         
         return certificado
             .map(cert -> ResponseEntity.ok(cert))
@@ -177,7 +185,7 @@ public class CertificacionController {
     public ResponseEntity<List<CertificadoResponse>> obtenerTodosCertificados() {
         log.debug("Obteniendo todos los certificados");
         
-        List<CertificadoResponse> certificados = certificacionService.obtenerTodosCertificados();
+        List<CertificadoResponse> certificados = certificadoService.obtenerTodosCertificados();
         return ResponseEntity.ok(certificados);
     }
     
@@ -203,7 +211,7 @@ public class CertificacionController {
         log.debug("Buscando certificados por estado: {}", codigoEstado);
         
         try {
-            List<CertificadoResponse> certificados = certificacionService.obtenerCertificadosPorEstado(codigoEstado);
+            List<CertificadoResponse> certificados = certificadoService.obtenerCertificadosPorEstado(codigoEstado);
             return ResponseEntity.ok(certificados);
         } catch (RuntimeException e) {
             log.error("Error al buscar certificados por estado: {}", e.getMessage());
@@ -229,7 +237,7 @@ public class CertificacionController {
         log.info("Validando certificado: {} con tipo: {}", request.getCodigoValidacion(), request.getTipoValidador());
         
         try {
-            ValidacionResponse validacion = certificacionService.validarCertificado(request);
+            ValidacionResponse validacion = certificadoService.validarCertificado(request);
             log.info("Certificado validado exitosamente: {}", request.getCodigoValidacion());
             return ResponseEntity.ok(validacion);
         } catch (RuntimeException e) {
@@ -260,7 +268,7 @@ public class CertificacionController {
         log.debug("Obteniendo validaciones para certificado: {}", codigoValidacion);
         
         try {
-            List<ValidacionResponse> validaciones = certificacionService.obtenerValidacionesCertificado(codigoValidacion);
+            List<ValidacionResponse> validaciones = certificadoService.obtenerValidacionesCertificado(codigoValidacion);
             return ResponseEntity.ok(validaciones);
         } catch (RuntimeException e) {
             log.error("Error al obtener validaciones: {}", e.getMessage());
@@ -288,7 +296,7 @@ public class CertificacionController {
         log.info("Revocando certificado: {} por motivo: {}", codigoValidacion, motivo);
         
         try {
-            CertificadoResponse certificado = certificacionService.revocarCertificado(codigoValidacion, motivo);
+            CertificadoResponse certificado = certificadoService.revocarCertificado(codigoValidacion, motivo);
             log.info("Certificado revocado exitosamente: {}", codigoValidacion);
             return ResponseEntity.ok(certificado);
         } catch (RuntimeException e) {
@@ -315,7 +323,7 @@ public class CertificacionController {
         log.info("Reactivando certificado: {}", codigoValidacion);
         
         try {
-            CertificadoResponse certificado = certificacionService.reactivarCertificado(codigoValidacion);
+            CertificadoResponse certificado = certificadoService.reactivarCertificado(codigoValidacion);
             log.info("Certificado reactivado exitosamente: {}", codigoValidacion);
             return ResponseEntity.ok(certificado);
         } catch (RuntimeException e) {
@@ -345,7 +353,7 @@ public class CertificacionController {
         log.info("Generando PDF para certificado: {}", codigoValidacion);
         
         try {
-            String urlPdf = certificacionService.generarPdfCertificado(codigoValidacion);
+            String urlPdf = certificadoService.generarPdfCertificado(codigoValidacion);
             log.info("PDF generado exitosamente para certificado: {}", codigoValidacion);
             return ResponseEntity.ok(urlPdf);
         } catch (RuntimeException e) {

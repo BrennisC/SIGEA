@@ -34,6 +34,9 @@ public class ValidarCertificadoUseCase {
 
     /**
      * Ejecuta la validación de un certificado
+     * IMPORTANTE: Solo valida observando el estado del certificado.
+     * Si el estado es EMITIDO, permite la validación.
+     * Si el estado NO es EMITIDO, lanza excepción sin procesar más.
      */
     public ValidacionDomainEntity execute(ValidarCertificadoRequest request) {
         // Validaciones de entrada
@@ -46,6 +49,14 @@ public class ValidarCertificadoUseCase {
                 "No se encontró un certificado con código: " + request.getCodigoValidacion()
             ));
         
+        // VALIDACIÓN CRÍTICA: Solo se puede validar si el certificado está EMITIDO
+        if (!certificado.estaEmitido()) {
+            throw new IllegalStateException(
+                "El certificado debe estar en estado EMITIDO para poder ser validado. " +
+                "Estado actual: " + certificado.getEstado().getCodigo()
+            );
+        }
+        
         // Buscar tipo de validador
         TipoValidadorDomainEntity tipoValidador = tipoValidadorRepository
             .findByCodigo(request.getTipoValidador())
@@ -53,7 +64,7 @@ public class ValidarCertificadoUseCase {
                 "No se encontró un tipo de validador con código: " + request.getTipoValidador()
             ));
         
-        // Validaciones de negocio
+        // Validaciones de negocio adicionales
         validateBusinessRules(certificado, tipoValidador, request);
         
         // Verificar si ya existe una validación de este tipo para el certificado

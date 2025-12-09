@@ -1,5 +1,6 @@
 package com.zentry.sigea.module_certificaciones.presentation.models.requestDTO;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -13,12 +14,16 @@ public class CrearCertificadoRequest {
     private String asistenciaId;
     
     private String observaciones;
+
+    @NotBlank(message = "La URL del PDF no puede estar vacía")
+    private String urlPdf;
     
     // Constructores
     public CrearCertificadoRequest() {}
     
-    public CrearCertificadoRequest(String asistenciaId) {
+    public CrearCertificadoRequest(String asistenciaId, String urlPdf) {
         this.asistenciaId = asistenciaId;
+        this.urlPdf = urlPdf;   
     }
     
     // Getters y Setters
@@ -36,5 +41,13 @@ public class CrearCertificadoRequest {
     
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
+    }
+
+    public String getUrlPdf() {
+        return urlPdf;
+    }
+
+    public void setUrlPdf(String urlPdf) {
+        this.urlPdf = urlPdf;
     }
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.CrearCertificadoRequest;
 import com.zentry.sigea.module_certificaciones.presentation.models.requestDTO.ValidarCertificadoRequest;
 import com.zentry.sigea.module_certificaciones.presentation.models.responseDTO.CertificadoResponse;
@@ -18,9 +20,10 @@ public interface ICertificacionService {
     /**
      * Crea un nuevo certificado para una inscripción
      * @param request Datos para crear el certificado
+     * @param archivoPdf Archivo PDF del certificado
      * @return Certificado creado
      */
-    CertificadoResponse crearCertificado(CrearCertificadoRequest request);
+    CertificadoResponse crearCertificado(CrearCertificadoRequest request, MultipartFile archivoPdf);
     
     /**
      * Crea certificados masivos con una sola peticion
@@ -41,7 +44,7 @@ public interface ICertificacionService {
      * @param inscripcionId ID de la inscripción
      * @return Optional con el certificado de la inscripción
      */
-    Optional<CertificadoResponse> buscarCertificadoPorInscripcion(Long inscripcionId);
+    Optional<CertificadoResponse> buscarCertificadoPorInscripcion(String inscripcionId);
     
     /**
      * Obtiene todos los certificados
@@ -91,5 +94,14 @@ public interface ICertificacionService {
      * @return URL del PDF generado
      */
     String generarPdfCertificado(String codigoValidacion);
+
+
+    /**
+     * Obtiene las validaciones por tipo de validador
+     * @param tipoValidador Tipo de validador (QR, Código alfanumérico, etc.)
+     * @return Lista de validaciones de ese tipo
+     */
+    List<ValidacionResponse> obtenerValidacionesPorTipo(String tipoValidador);
+    
 
 }
